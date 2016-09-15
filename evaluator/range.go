@@ -1,10 +1,5 @@
 package elastic
 
-import (
-	"encoding/json"
-	"log"
-)
-
 var dateFormat string = "dd/MM/yyyy||yyyy"
 
 type GreaterThanTerm struct {
@@ -15,14 +10,7 @@ type GreaterThanTerm struct {
 
 // Translate translates a GreaterThanTerm into a corresponding range ES term
 func (g *GreaterThanTerm) Translate() string {
-	var rangeTerm map[string]interface{}
-	rangeTerm = make(map[string]interface{})
-
-	var fieldTerm map[string]interface{}
-	fieldTerm = make(map[string]interface{})
-
-	var paramsTerm map[string]interface{}
-	paramsTerm = make(map[string]interface{})
+	paramsTerm := make(map[string]interface{})
 
 	var inclusionKey string
 	switch g.inclusive {
@@ -40,16 +28,13 @@ func (g *GreaterThanTerm) Translate() string {
 		paramsTerm[inclusionKey] = g.value
 	}
 
-	fieldTerm[g.field] = paramsTerm
-	rangeTerm["range"] = fieldTerm
-
-	termSlice, err := json.Marshal(rangeTerm)
-	if err != nil {
-		log.Panic("...")
+	rangeTerm := map[string]interface{}{
+		"range": map[string]interface{}{
+			g.field: paramsTerm,
+		},
 	}
 
-	termString := string(termSlice[:len(termSlice)])
-	return termString
+	return rangeTerm
 
 }
 
@@ -59,16 +44,9 @@ type LessThanTerm struct {
 	inclusive bool
 }
 
-// Translate translates a GreaterThanTerm into a corresponding range ES term
+// Translate translates a LessThanTerm into a corresponding range ES term
 func (l *LessThanTerm) Translate() string {
-	var rangeTerm map[string]interface{}
-	rangeTerm = make(map[string]interface{})
-
-	var fieldTerm map[string]interface{}
-	fieldTerm = make(map[string]interface{})
-
-	var paramsTerm map[string]interface{}
-	paramsTerm = make(map[string]interface{})
+	paramsTerm := make(map[string]interface{})
 
 	var inclusionKey string
 	switch l.inclusive {
@@ -78,7 +56,7 @@ func (l *LessThanTerm) Translate() string {
 		inclusionKey = "lt"
 	}
 
-	switch l.value.(type) {
+	switch g.value.(type) {
 	case string:
 		paramsTerm[inclusionKey] = l.value
 		paramsTerm["format"] = dateFormat
@@ -86,34 +64,25 @@ func (l *LessThanTerm) Translate() string {
 		paramsTerm[inclusionKey] = l.value
 	}
 
-	fieldTerm[l.field] = paramsTerm
-	rangeTerm["range"] = fieldTerm
-
-	termSlice, err := json.Marshal(rangeTerm)
-	if err != nil {
-		log.Panic("...")
+	rangeTerm := map[string]interface{}{
+		"range": map[string]interface{}{
+			l.field: paramsTerm,
+		},
 	}
 
-	termString := string(termSlice[:len(termSlice)])
-	return termString
+	return rangeTerm
+
 }
 
+// Translate translates a RangeTerm into a corresponding range ES term
 type RangeTerm struct {
 	field string
 	lt    interface{}
 	gt    interface{}
 }
 
-// Translate translates a GreaterThanTerm into a corresponding range ES term
 func (r *RangeTerm) Translate() string {
-	var rangeTerm map[string]interface{}
-	rangeTerm = make(map[string]interface{})
-
-	var fieldTerm map[string]interface{}
-	fieldTerm = make(map[string]interface{})
-
-	var paramsTerm map[string]interface{}
-	paramsTerm = make(map[string]interface{})
+	paramsTerm := make(map[string]interface{})
 
 	paramsTerm["lte"] = r.lt
 	paramsTerm["gte"] = r.gt
@@ -122,14 +91,10 @@ func (r *RangeTerm) Translate() string {
 		paramsTerm["format"] = dateFormat
 	}
 
-	fieldTerm[r.field] = paramsTerm
-	rangeTerm["range"] = fieldTerm
-
-	termSlice, err := json.Marshal(rangeTerm)
-	if err != nil {
-		log.Panic("...")
+	rangeTerm := map[string]interface{}{
+		"range": map[string]interface{}{
+			g.field: paramsTerm,
+		},
 	}
-
-	termString := string(termSlice[:len(termSlice)])
-	return termString
+	return rangeTerm
 }
