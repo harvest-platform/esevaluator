@@ -14,7 +14,6 @@ type Leaf interface {
 }
 
 func encodeParam(concept string, param map[string]interface{}) map[string]interface{} {
-	_ = "breakpoint"
 	operator := param["operator"].(string)
 	var conceptID string
 	if operator == "set" {
