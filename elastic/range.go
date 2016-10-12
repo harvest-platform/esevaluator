@@ -1,7 +1,8 @@
 package elastic
 
-var dateFormat string = "dd/MM/yyyy||yyyy"
+var dateFormat = "dd/MM/yyyy||yyyy"
 
+// GreaterThanTerm checks if a field value is greater than a given value
 type GreaterThanTerm struct {
 	field     string
 	value     interface{}
@@ -9,7 +10,7 @@ type GreaterThanTerm struct {
 }
 
 // Translate translates a GreaterThanTerm into a corresponding range ES term
-func (g *GreaterThanTerm) Translate() string {
+func (g *GreaterThanTerm) Translate() map[string]interface{} {
 	paramsTerm := make(map[string]interface{})
 
 	var inclusionKey string
@@ -38,6 +39,7 @@ func (g *GreaterThanTerm) Translate() string {
 
 }
 
+// LessThanTerm checks if a field value is less than a given value
 type LessThanTerm struct {
 	field     string
 	value     interface{}
@@ -45,7 +47,7 @@ type LessThanTerm struct {
 }
 
 // Translate translates a LessThanTerm into a corresponding range ES term
-func (l *LessThanTerm) Translate() string {
+func (l *LessThanTerm) Translate() map[string]interface{} {
 	paramsTerm := make(map[string]interface{})
 
 	var inclusionKey string
@@ -56,7 +58,7 @@ func (l *LessThanTerm) Translate() string {
 		inclusionKey = "lt"
 	}
 
-	switch g.value.(type) {
+	switch l.value.(type) {
 	case string:
 		paramsTerm[inclusionKey] = l.value
 		paramsTerm["format"] = dateFormat
@@ -74,14 +76,15 @@ func (l *LessThanTerm) Translate() string {
 
 }
 
-// Translate translates a RangeTerm into a corresponding range ES term
+// RangeTerm checks if a field value is within a given range
 type RangeTerm struct {
 	field string
 	lt    interface{}
 	gt    interface{}
 }
 
-func (r *RangeTerm) Translate() string {
+// Translate translates a RangeTerm into a corresponding range ES term
+func (r *RangeTerm) Translate() map[string]interface{} {
 	paramsTerm := make(map[string]interface{})
 
 	paramsTerm["lte"] = r.lt
@@ -93,7 +96,7 @@ func (r *RangeTerm) Translate() string {
 
 	rangeTerm := map[string]interface{}{
 		"range": map[string]interface{}{
-			g.field: paramsTerm,
+			r.field: paramsTerm,
 		},
 	}
 	return rangeTerm

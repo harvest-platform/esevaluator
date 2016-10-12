@@ -1,5 +1,6 @@
-package evaluator
+package elastic
 
+// EqualityTerm checks if a value is equal or not equal to another value
 type EqualityTerm struct {
 	field string
 	value interface{}
@@ -20,6 +21,7 @@ func (e *EqualityTerm) Translate() map[string]interface{} {
 	return term
 }
 
+// DefinitionTerm checks if a value is defined for a given field
 type DefinitionTerm struct {
 	field   string
 	defined bool
@@ -32,7 +34,7 @@ func (d *DefinitionTerm) Translate() map[string]interface{} {
 			"field": d.field,
 		},
 	}
-	if !defined {
+	if !d.defined {
 		boolTerm := Negate(existsTerm)
 		return boolTerm
 	}
