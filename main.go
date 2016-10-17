@@ -8,6 +8,6 @@ import (
 )
 
 func main() {
-	http.Handle("/elastic", elastic.NewHandler())
+	http.Handle("/elastic", elastic.TranslateHandler())
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }

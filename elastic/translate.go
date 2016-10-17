@@ -1,185 +1,186 @@
 package elastic
 
 import (
-	"encoding/json"
+	"errors"
 	"fmt"
-	"log"
 	"strings"
 )
 
 // Leaf is a terminal node of a query
 // All terminal query terms implement the Translate() method
-type Leaf interface {
-	Translate() map[string]interface{}
+type leaf interface {
+	Translate() Term
 }
 
-func encodeParam(concept string, param map[string]interface{}) map[string]interface{} {
-	operator := param["operator"].(string)
-	var conceptID string
-	if operator == "set" {
-		conceptID = "_id"
+// encodeParam encodes a parameter from a query to its corresponding leaf type
+func encodeParam(concept string, param map[string]interface{}) (map[string]interface{}, error) {
+	o := param["operator"].(string)
+	var cid string
+	if o == "set" {
+		cid = "_id"
 	} else {
-		conceptID = param["id"].(string)
+		cid = param["id"].(string)
 	}
 	var conceptPath string
-	if concept != "" && operator != "set" {
-		conceptPath = concept + "." + conceptID
+	if concept != "" && o != "set" {
+		conceptPath = concept + "." + cid
 	} else {
-		conceptPath = conceptID
+		conceptPath = cid
 	}
-	value := param["value"]
-	var paramLeaf Leaf
-	switch operator {
+	v := param["value"]
+	var l leaf
+	switch o {
 	case "set":
-		paramLeaf = &MemberTerm{conceptPath, value}
+		l = &MemberTerm{conceptPath, v}
 	case "eq":
-		paramLeaf = &EqualityTerm{conceptPath, value, "+"}
+		l = &EqualityTerm{conceptPath, v, false}
 	case "-eq":
-		paramLeaf = &EqualityTerm{conceptPath, value, "-"}
+		l = &EqualityTerm{conceptPath, v, true}
 	case "undefined":
-		paramLeaf = &DefinitionTerm{conceptPath, false}
+		l = &DefinitionTerm{conceptPath, false}
 	case "defined":
-		paramLeaf = &DefinitionTerm{conceptPath, true}
+		l = &DefinitionTerm{conceptPath, true}
 	case "one":
-		sliceValue := value.([]string)
-		paramLeaf = &OneTerm{conceptPath, sliceValue}
+		s := v.([]string)
+		l = &OneTerm{conceptPath, s}
 	case "match":
-		stringValue := value.(string)
-		paramLeaf = &MatchTerm{conceptPath, stringValue}
+		s := v.(string)
+		l = &MatchTerm{conceptPath, s}
 	case "query":
-		stringValue := value.(string)
-		paramLeaf = &QueryTerm{conceptPath, stringValue}
+		s := v.(string)
+		l = &QueryTerm{conceptPath, s}
 	case "gt":
-		paramLeaf = &GreaterThanTerm{conceptPath, value, false}
+		l = &GreaterThanTerm{conceptPath, v, false}
 	case "gte":
-		paramLeaf = &GreaterThanTerm{conceptPath, value, true}
+		l = &GreaterThanTerm{conceptPath, v, true}
 	case "lt":
-		paramLeaf = &LessThanTerm{conceptPath, value, false}
+		l = &LessThanTerm{conceptPath, v, false}
 	case "lte":
-		paramLeaf = &LessThanTerm{conceptPath, value, true}
+		l = &LessThanTerm{conceptPath, v, true}
 	case "range":
-		sliceValue := value.([]interface{})
-		gt := sliceValue[0]
-		lt := sliceValue[1]
-		paramLeaf = &RangeTerm{conceptPath, lt, gt}
+		s := v.([]interface{})
+		gt := s[0]
+		lt := s[1]
+		l = &RangeTerm{conceptPath, lt, gt}
 	case "empty":
-		paramLeaf = &EmptinessTerm{conceptPath, true}
+		l = &EmptinessTerm{conceptPath, true}
 	case "nonempty":
-		paramLeaf = &EmptinessTerm{conceptPath, false}
+		l = &EmptinessTerm{conceptPath, false}
 	case "member":
-		paramLeaf = &MemberTerm{conceptPath, value}
+		l = &MemberTerm{conceptPath, v}
 	case "subset":
-		sliceValue := value.([]interface{})
-		paramLeaf = &SubsetTerm{conceptPath, sliceValue}
+		s := v.([]interface{})
+		l = &SubsetTerm{conceptPath, s}
 	default:
-		log.Panic(fmt.Sprintf("Operator %s not found", operator))
+		return nil, errors.New((fmt.Sprintf("Operator %s not found", o)))
 	}
-	return paramLeaf.Translate()
+	return l.Translate(), nil
 }
 
-// BooleanStatement blueprints a Must or Should term
-type BooleanStatement interface {
-	AddParam(map[string]interface{})
-	Encode() map[string]interface{}
-}
-
-// MustTerm represents an ES boolean "must" statement
-type MustTerm struct {
-	params []map[string]interface{}
-}
-
-// AddParam adds a parameter to a MustTerm
-func (m *MustTerm) AddParam(p map[string]interface{}) {
-	m.params = append(m.params, p)
-}
-
-// Encode translates a MustTerm into an ES boolean "must" statement
-func (m MustTerm) Encode() map[string]interface{} {
-	boolTerm := map[string]interface{}{
-		"bool": map[string]interface{}{
-			"must": m.params,
-		},
+func encodeConcept(t Term) (Term, error) {
+	concept, ok := t["concept"].(string)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Unable to encode concept value to string: %v", t["concept"]))
 	}
-	return boolTerm
-}
-
-// ShouldTerm represents an ES boolean "should" statement
-type ShouldTerm struct {
-	params []map[string]interface{}
-}
-
-// AddParam adds a parameter to a ShouldTerm
-func (s *ShouldTerm) AddParam(p map[string]interface{}) {
-	s.params = append(s.params, p)
-}
-
-// Encode translates a ShouldTerm into an ES boolean "should" statement
-func (s ShouldTerm) Encode() map[string]interface{} {
-	boolTerm := map[string]interface{}{
-		"bool": map[string]interface{}{
-			"should":               s.params,
-			"minimum_should_match": 1,
-		},
+	params, ok := t["params"].([]interface{})
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Unable to encode concept params to interface slice: %v", t["params"]))
 	}
-	return boolTerm
-}
-
-func encodeConcept(t map[string]interface{}) map[string]interface{} {
-	concept := t["concept"].(string)
-	params := t["params"].([]interface{})
 	var must MustTerm
-	for _, param := range params {
-		paramMap := param.(map[string]interface{})
-		encodedParam := encodeParam(concept, paramMap)
+	for _, p := range params {
+		paramMap, ok := p.(map[string]interface{})
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("Unable to encode param to map: %v", p))
+		}
+		paramTerm := Term(paramMap)
+		encodedParam, err := encodeParam(concept, paramTerm)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("Unable to encode parameter: %v", paramTerm))
+		}
 		must.AddParam(encodedParam)
 	}
-	filterStatement := map[string]interface{}{
+
+	filterStatement := Term{
 		"filter": must.Encode(),
 	}
+
 	if strings.Contains(concept, ".") {
-		return Nest(filterStatement)
+		return Nest(filterStatement), nil
 	}
-	return filterStatement
+
+	return filterStatement, nil
 }
 
-func encodeBranch(t map[string]interface{}) map[string]interface{} {
-	operator := t["operator"].(string)
-	terms := t["terms"].([]interface{})
-	var booleanStatement BooleanStatement
-	if operator == "or" {
-		booleanStatement = &ShouldTerm{}
-	} else if operator == "and" {
-		booleanStatement = &MustTerm{}
-	} else {
-		log.Panic(fmt.Sprintf("Unknown boolean operator: %s", operator))
+func encodeBranch(t Term) (Term, error) {
+	op, ok := t["operator"].(string)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Cannot encode branch operator to string: %v", t["operator"]))
 	}
+	terms, ok := t["terms"].([]interface{})
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Cannot encode branch terms to interface slice: %v", t["terms"]))
+	}
+	var b BooleanStatement
+	if op == "or" {
+		b = &ShouldTerm{}
+	} else if op == "and" {
+		b = &MustTerm{}
+	} else {
+		return nil, errors.New(fmt.Sprintf("Unrecognized branching operator: %s", op))
+	}
+
 	for _, term := range terms {
-		termMap := term.(map[string]interface{})
-		termType := termMap["type"].(string)
-		if termType == "concept" {
-			booleanStatement.AddParam(encodeConcept(termMap))
-		} else if termType == "branch" {
-			booleanStatement.AddParam(encodeBranch(termMap))
+		tmap, ok := term.(map[string]interface{})
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("Cannot encode term to map: %v", term))
+		}
+		tterm := Term(tmap)
+		ttype := tterm["type"].(string)
+
+		if ttype == "concept" {
+			c, err := encodeConcept(tterm)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Unable to encode concept: %v", c))
+			}
+			b.AddParam(c)
+		} else if ttype == "branch" {
+			c, err := encodeBranch(tterm)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("Unable to encode branch: %v", c))
+			}
+			b.AddParam(c)
 		}
 	}
-	return booleanStatement.Encode()
+
+	return b.Encode(), nil
 }
 
-// EncodeQuery takes a query byte array and encodes it to a valid ES query
-func EncodeQuery(q []byte) map[string]interface{} {
-	var queryMap map[string]interface{}
-	json.Unmarshal(q, &queryMap)
-	term := queryMap["term"].(map[string]interface{})
-	termType := term["type"].(string)
-	// Some queries may contain just one concept
-	if termType == "concept" {
-		encodedConcept := encodeConcept(term)
-		return Filter(encodedConcept)
-	} else if termType == "branch" {
-		encodedBranch := encodeBranch(term)
-		return Filter(encodedBranch)
-	} else {
-		log.Panic(fmt.Sprintf("Unknown term type: %s", termType))
+// Translate encodes a query into its ES equivalent
+func Translate(query Term) (Term, error) {
+	mapterm, ok := query["term"].(map[string]interface{})
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Cannot parse query term: %v", mapterm))
 	}
-	return nil
+	term := Term(mapterm)
+	ttype, ok := term["type"].(string)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("Cannot parse term type to string, invalid json: %v", term["type"]))
+	}
+	switch ttype {
+	case "concept":
+		t, err := encodeConcept(term)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("Unable to encode concept term %v", term))
+		}
+		return Filter(t), nil
+
+	case "branch":
+		t, err := encodeBranch(term)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("Unable to encode branch term %v", term))
+		}
+		return Filter(t), nil
+	}
+
+	return nil, errors.New(fmt.Sprintf("Unknown term type: %s", ttype))
 }
