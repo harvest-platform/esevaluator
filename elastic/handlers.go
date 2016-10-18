@@ -3,25 +3,33 @@ package elastic
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 )
 
 func translateHandler(w http.ResponseWriter, r *http.Request) {
-	b, err := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
-	if err != nil {
+
+	var t Term
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err,
+		})
 		return
 	}
-	var t Term
-	json.Unmarshal(b, &t)
 	e, err := Translate(t)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Query translation returned with error: %v", err), 422)
+		http.Error(w, fmt.Sprintf("Query translation returned with error: %v", err), http.StatusUnprocessableEntity)
 	}
-	q, _ := json.Marshal(e)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte(q))
+	if err := json.NewEncoder(w).Encode(e); err != nil {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"error": err,
+		})
+		return
+	}
 }
 
 // TranslateHandler is the default handler for http ES translate requests
