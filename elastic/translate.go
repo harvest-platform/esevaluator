@@ -1,7 +1,6 @@
 package elastic
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -41,7 +40,10 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 	case "defined":
 		l = &DefinitionTerm{conceptPath, true}
 	case "one":
-		s := v.([]string)
+		s, ok := v.([]string)
+		if !ok {
+			return nil, fmt.Errorf("Cannot parse 'one' query value to slice: %v", v)
+		}
 		l = &OneTerm{conceptPath, s}
 	case "match":
 		s := v.(string)
@@ -59,9 +61,7 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 		l = &LessThanTerm{conceptPath, v, true}
 	case "range":
 		s := v.([]interface{})
-		gt := s[0]
-		lt := s[1]
-		l = &RangeTerm{conceptPath, lt, gt}
+		l = &RangeTerm{conceptPath, s[1], s[0]}
 	case "empty":
 		l = &EmptinessTerm{conceptPath, true}
 	case "nonempty":
@@ -72,7 +72,7 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 		s := v.([]interface{})
 		l = &SubsetTerm{conceptPath, s}
 	default:
-		return nil, errors.New((fmt.Sprintf("Operator %s not found", o)))
+		return nil, fmt.Errorf("Operator %s not found", o)
 	}
 	return l.Translate(), nil
 }
@@ -80,22 +80,22 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 func encodeConcept(t Term) (Term, error) {
 	concept, ok := t["concept"].(string)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Unable to encode concept value to string: %v", t["concept"]))
+		return nil, fmt.Errorf("Unable to encode concept value to string: %v", t["concept"])
 	}
 	params, ok := t["params"].([]interface{})
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Unable to encode concept params to interface slice: %v", t["params"]))
+		return nil, fmt.Errorf("Unable to encode concept params to interface slice: %v", t["params"])
 	}
 	var must MustTerm
 	for _, p := range params {
 		paramMap, ok := p.(map[string]interface{})
 		if !ok {
-			return nil, errors.New(fmt.Sprintf("Unable to encode param to map: %v", p))
+			return nil, fmt.Errorf("Unable to encode param to map: %v", p)
 		}
 		paramTerm := Term(paramMap)
 		encodedParam, err := encodeParam(concept, paramTerm)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Unable to encode parameter: %v", paramTerm))
+			return nil, fmt.Errorf("Unable to encode parameter: %v", paramTerm)
 		}
 		must.AddParam(encodedParam)
 	}
@@ -114,11 +114,11 @@ func encodeConcept(t Term) (Term, error) {
 func encodeBranch(t Term) (Term, error) {
 	op, ok := t["operator"].(string)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Cannot encode branch operator to string: %v", t["operator"]))
+		return nil, fmt.Errorf("Cannot encode branch operator to string: %v", t["operator"])
 	}
 	terms, ok := t["terms"].([]interface{})
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Cannot encode branch terms to interface slice: %v", t["terms"]))
+		return nil, fmt.Errorf("Cannot encode branch terms to interface slice: %v", t["terms"])
 	}
 	var b BooleanStatement
 	if op == "or" {
@@ -126,13 +126,13 @@ func encodeBranch(t Term) (Term, error) {
 	} else if op == "and" {
 		b = &MustTerm{}
 	} else {
-		return nil, errors.New(fmt.Sprintf("Unrecognized branching operator: %s", op))
+		return nil, fmt.Errorf("Unrecognized branching operator: %s", op)
 	}
 
 	for _, term := range terms {
 		tmap, ok := term.(map[string]interface{})
 		if !ok {
-			return nil, errors.New(fmt.Sprintf("Cannot encode term to map: %v", term))
+			return nil, fmt.Errorf("Cannot encode term to map: %v", term)
 		}
 		tterm := Term(tmap)
 		ttype := tterm["type"].(string)
@@ -140,13 +140,13 @@ func encodeBranch(t Term) (Term, error) {
 		if ttype == "concept" {
 			c, err := encodeConcept(tterm)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("Unable to encode concept: %v", c))
+				return nil, fmt.Errorf("Unable to encode concept: %v", c)
 			}
 			b.AddParam(c)
 		} else if ttype == "branch" {
 			c, err := encodeBranch(tterm)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("Unable to encode branch: %v", c))
+				return nil, fmt.Errorf("Unable to encode branch: %v", c)
 			}
 			b.AddParam(c)
 		}
@@ -159,28 +159,28 @@ func encodeBranch(t Term) (Term, error) {
 func Translate(query Term) (Term, error) {
 	mapterm, ok := query["term"].(map[string]interface{})
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Cannot parse query term: %v", mapterm))
+		return nil, fmt.Errorf("Cannot parse query term: %v", mapterm)
 	}
 	term := Term(mapterm)
 	ttype, ok := term["type"].(string)
 	if !ok {
-		return nil, errors.New(fmt.Sprintf("Cannot parse term type to string, invalid json: %v", term["type"]))
+		return nil, fmt.Errorf("Cannot parse term type to string, invalid json: %v", term["type"])
 	}
 	switch ttype {
 	case "concept":
 		t, err := encodeConcept(term)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Unable to encode concept term %v", term))
+			return nil, fmt.Errorf("Unable to encode concept term %v", term)
 		}
 		return Filter(t), nil
 
 	case "branch":
 		t, err := encodeBranch(term)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Unable to encode branch term %v", term))
+			return nil, fmt.Errorf("Unable to encode branch term %v", term)
 		}
 		return Filter(t), nil
 	}
 
-	return nil, errors.New(fmt.Sprintf("Unknown term type: %s", ttype))
+	return nil, fmt.Errorf("Unknown term type: %s", ttype)
 }
