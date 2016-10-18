@@ -42,14 +42,20 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 	case "one":
 		s, ok := v.([]string)
 		if !ok {
-			return nil, fmt.Errorf("Cannot parse 'one' query value to slice: %v", v)
+			return nil, fmt.Errorf("Cannot parse 'one' query value to string slice: %v", v)
 		}
 		l = &OneTerm{conceptPath, s}
 	case "match":
-		s := v.(string)
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("Cannot parse 'match' query value to string: %v", v)
+		}
 		l = &MatchTerm{conceptPath, s}
 	case "query":
-		s := v.(string)
+		s, ok := v.(string)
+		if !ok {
+			return nil, fmt.Errorf("Cannot parse 'query' query value to string: %v", v)
+		}
 		l = &QueryTerm{conceptPath, s}
 	case "gt":
 		l = &GreaterThanTerm{conceptPath, v, false}
@@ -60,7 +66,10 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 	case "lte":
 		l = &LessThanTerm{conceptPath, v, true}
 	case "range":
-		s := v.([]interface{})
+		s, ok := v.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Cannot parse 'range' query value to interface slice: %v", v)
+		}
 		l = &RangeTerm{conceptPath, s[1], s[0]}
 	case "empty":
 		l = &EmptinessTerm{conceptPath, true}
@@ -69,7 +78,10 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 	case "member":
 		l = &MemberTerm{conceptPath, v}
 	case "subset":
-		s := v.([]interface{})
+		s, ok := v.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("Cannot parse 'subset' query value to interface slice: %v", v)
+		}
 		l = &SubsetTerm{conceptPath, s}
 	default:
 		return nil, fmt.Errorf("Operator %s not found", o)
