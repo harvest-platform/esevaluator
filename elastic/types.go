@@ -1,39 +1,5 @@
 package elastic
 
-// Negate wraps a term in a boolean "not" condition
-func Negate(t Term) Term {
-	b := Term{
-		"bool": Term{
-			"not": t,
-		},
-	}
-	return b
-}
-
-// Nest wraps a term in a "nested" statement
-func Nest(t Term) Term {
-	n := Term{
-		"nested": t,
-	}
-	return n
-}
-
-// Query wraps a term in a "query" statement
-func Query(t Term) Term {
-	q := Term{
-		"query": t,
-	}
-	return q
-}
-
-// Filter wraps a term in a "filter" statement
-func Filter(t Term) Term {
-	f := Term{
-		"filter": t,
-	}
-	return f
-}
-
 // Term is an alias for map[string]interface{}
 type Term map[string]interface{}
 
@@ -320,4 +286,34 @@ func (rt *RangeTerm) Translate() Term {
 		},
 	}
 	return r
+}
+
+// Negate wraps a term in a boolean "not" condition
+func Negate(t Term) Term {
+	return Term{
+		"bool": Term{
+			"not": t,
+		},
+	}
+}
+
+// Nest wraps a term in a "nested" statement
+func Nest(t Term) Term {
+	return Term{
+		"nested": t,
+	}
+}
+
+// Query wraps a term in a "query" statement
+func Query(t Term) Term {
+	return Term{
+		"query": t,
+	}
+}
+
+// Filter wraps a term in a "filter" statement
+func Filter(t Term) Term {
+	return Term{
+		"filter": t,
+	}
 }
