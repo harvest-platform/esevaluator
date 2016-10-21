@@ -69,6 +69,8 @@ func encodeParam(concept string, param map[string]interface{}) (map[string]inter
 		s, ok := v.([]interface{})
 		if !ok {
 			return nil, fmt.Errorf("Cannot parse 'range' query value to interface slice: %v", v)
+		} else if len(s) > 2 {
+			return nil, fmt.Errorf("'Range' query value cannot have length different than 2: %v", s)
 		}
 		l = &RangeTerm{conceptPath, s[1], s[0]}
 	case "empty":
