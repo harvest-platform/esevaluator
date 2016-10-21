@@ -6,30 +6,32 @@ import (
 	"net/http"
 )
 
+func writeResponse(w http.ResponseWriter, status int, data interface{}) {
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(status)
+}
+
 func translateHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var t Term
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": err,
+		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": fmt.Sprintf("Could not encode query to map: %v", err),
 		})
-		return
 	}
+
 	e, err := Translate(t)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Query translation returned with error: %v", err), http.StatusUnprocessableEntity)
-	}
-	if err := json.NewEncoder(w).Encode(e); err != nil {
-		w.WriteHeader(http.StatusUnprocessableEntity)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"error": err,
+		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
+			"error": fmt.Sprintf("Could not translate query: %v", err),
 		})
-		return
 	}
+	writeResponse(w, http.StatusOK, e)
 }
 
 // TranslateHandler is the default handler for http ES translate requests
