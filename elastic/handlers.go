@@ -23,6 +23,7 @@ func translateHandler(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": fmt.Sprintf("Could not encode query to map: %v", err),
 		})
+		return
 	}
 
 	e, err := Translate(t)
@@ -30,8 +31,10 @@ func translateHandler(w http.ResponseWriter, r *http.Request) {
 		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": fmt.Sprintf("Could not translate query: %v", err),
 		})
+		return
 	}
 	writeResponse(w, http.StatusOK, e)
+	return
 }
 
 // TranslateHandler is the default handler for http ES translate requests
