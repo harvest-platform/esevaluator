@@ -1,4 +1,4 @@
-package elastic
+package esevaluator
 
 // Term is an alias for map[string]interface{}
 type Term map[string]interface{}
