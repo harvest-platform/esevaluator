@@ -1,9 +1,11 @@
-package elastic
+package transport
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/gerpsh/esevaluator"
 )
 
 func writeResponse(w http.ResponseWriter, status int, data interface{}) {
@@ -18,7 +20,7 @@ func writeResponse(w http.ResponseWriter, status int, data interface{}) {
 func translateHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
-	var t Term
+	var t esevaluator.Term
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": fmt.Sprintf("Could not encode query to map: %v", err),
@@ -26,7 +28,7 @@ func translateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e, err := Translate(t)
+	e, err := esevaluator.Translate(t)
 	if err != nil {
 		writeResponse(w, http.StatusUnprocessableEntity, map[string]interface{}{
 			"error": fmt.Sprintf("Could not translate query: %v", err),

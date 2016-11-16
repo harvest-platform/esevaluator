@@ -4,10 +4,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gerpsh/es-evaluator/elastic"
+	"github.com/gerpsh/esevaluator/transport"
 )
 
 func main() {
-	http.Handle("/elastic", elastic.TranslateHandler())
+	http.Handle("/elastic", transport.TranslateHandler())
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
