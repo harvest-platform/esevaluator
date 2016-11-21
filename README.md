@@ -125,7 +125,8 @@ Output Elasticsearch query:
                 }
               }]
             }
-          }
+          },
+          "path": "audiogram.puretone.f500"
         }
       }, {
         "bool": {
@@ -147,7 +148,8 @@ Output Elasticsearch query:
                     }
                   }]
                 }
-              }
+              },
+              "path": "audiogram.puretone.pta"
             }
           }, {
             "nested": {
@@ -165,7 +167,8 @@ Output Elasticsearch query:
                     }
                   }]
                 }
-              }
+              },
+              "path": "audiogram.puretone.pta"
             }
           }]
         }
