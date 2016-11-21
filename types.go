@@ -317,3 +317,9 @@ func Filter(t Term) Term {
 		"filter": t,
 	}
 }
+
+// Prepare prepares a query term for use in an Elasticsearch instance
+func Prepare(query Term) Term {
+	query["source"] = "_id"
+	return query
+}

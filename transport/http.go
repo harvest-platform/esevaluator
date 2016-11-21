@@ -35,7 +35,8 @@ func translateHandler(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	writeResponse(w, http.StatusOK, e)
+	q := esevaluator.Prepare(e)
+	writeResponse(w, http.StatusOK, q)
 	return
 }
 
