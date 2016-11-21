@@ -87,7 +87,7 @@ Input query:
 }
 ```
 
-Output Elasticsearch query
+Output Elasticsearch query:
 ```json
 {
   "filter": {
@@ -238,13 +238,23 @@ Term that, given a list of values, checks if the value of a field matches at lea
 }
 ```
 
+#### match
+Implements a ES free-text "match" on a text or string field.
+```json
+{
+  "id": "note",
+  "operator": "match",
+  "value": "cancer oncology"
+}
+```
+
 #### query
-Implements a ES free-text search of a text or string field.
+Implements a free-text ES query search of a text or string field.
 ```json
 {
   "id": "note",
   "operator": "query",
-  "value": "this is a query"
+  "value": "+(cancer | oncology) neoblastoma"
 }
 ```
 
@@ -272,7 +282,7 @@ Queries for values less (exclusive) than the supplied value.  Accepts numeric an
 ```json
 {
   "id": "dob",
-  "operator": "gt",
+  "operator": "lt",
   "value": "1998"
 }
 ```
@@ -282,7 +292,7 @@ Queries for values less (inclusive) than the supplied value.  Accepts numeric an
 ```json
 {
   "id": "dob",
-  "operator": "gte",
+  "operator": "lte",
   "value": "1998"
 }
 ```
