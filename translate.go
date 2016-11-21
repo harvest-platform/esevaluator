@@ -119,7 +119,7 @@ func encodeConcept(t Term) (Term, error) {
 	}
 
 	if strings.Contains(concept, ".") {
-		return Nest(filterStatement), nil
+		return Nest(filterStatement, concept), nil
 	}
 
 	return filterStatement, nil

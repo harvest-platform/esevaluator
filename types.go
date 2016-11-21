@@ -298,7 +298,8 @@ func Negate(t Term) Term {
 }
 
 // Nest wraps a term in a "nested" statement
-func Nest(t Term) Term {
+func Nest(t Term, p string) Term {
+	t["path"] = p
 	return Term{
 		"nested": t,
 	}
