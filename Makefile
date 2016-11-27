@@ -1,5 +1,4 @@
 PROG_NAME := "esevaluator"
-GIT_VERSION := $(shell git log -1 --pretty=format:"%h (%ci)" .)
 
 setup: install tls
 
@@ -10,12 +9,12 @@ install:
 	go get github.com/mitchellh/gox
 
 build:
-	go build -o $(GOPATH)/bin/esevaluator ./cmd/esevaluator
+	go build -o $(GOPATH)/bin/$(PROG_NAME) ./cmd/esevaluator
 
 dist-build:
-	mkdir -p bin
+	mkdir -p dist
 
-	gox -output="bin/esevaluator-{{.OS}}.{{.Arch}}" \
+	gox -output="./dist/{{.OS}}.{{.Arch}}/$(PROG_NAME)" \
 		-os="linux windows darwin" \
 		-arch="amd64" \
 		./cmd/esevaluator > /dev/null
