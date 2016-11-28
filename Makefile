@@ -19,6 +19,9 @@ dist-build:
 		-arch="amd64" \
 		./cmd/esevaluator > /dev/null
 
+docker: dist-build
+	docker build -t harvest-platform/$(PROG_NAME) .
+
 dist-zip:
 	cd dist && zip $(PROG_NAME)-darwin-amd64.zip darwin-amd64/*
 	cd dist && zip $(PROG_NAME)-linux-amd64.zip linux-amd64/*
