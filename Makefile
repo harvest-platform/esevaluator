@@ -14,7 +14,7 @@ build:
 dist-build:
 	mkdir -p dist
 
-	gox -output="./dist/{{.OS}}.{{.Arch}}/$(PROG_NAME)" \
+	gox -output="./dist/{{.OS}}-{{.Arch}}/$(PROG_NAME)" \
 		-os="linux windows darwin" \
 		-arch="amd64" \
 		./cmd/esevaluator > /dev/null
