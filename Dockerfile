@@ -1,10 +1,7 @@
-FROM golang:latest
+FROM scratch
 
-RUN mkdir -p /go/src/github.com/harvest-platform/esevaluator
-COPY . /go/src/github.com/harvest-platform/esevaluator
+COPY ./dist/linux-amd64/esevaluator /app
 
-WORKDIR /go/src/github.com/harvest-platform/esevaluator
+EXPOSE 8080
 
-RUN go build -o esevaluator ./cmd/esevaluator
-
-CMD ["./esevaluator"]
+ENTRYPOINT ["/app"]
