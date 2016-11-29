@@ -19,7 +19,7 @@ dist-build:
 		-arch="amd64" \
 		./cmd/esevaluator > /dev/null
 
-docker: dist-build
+docker:
 	docker build -t harvest-platform/$(PROG_NAME) .
 
 dist-zip:
