@@ -27,7 +27,7 @@ dist-zip:
 	cd dist && zip $(PROG_NAME)-linux-amd64.zip linux-amd64/*
 	cd dist && zip $(PROG_NAME)-windows-amd64.zip windows-amd64/*
 
-dist: dist-build dist-zip
+dist: dist-build dist-zip docker
 
 tls:
 	@if [ ! -a cert.pem ]; then \
