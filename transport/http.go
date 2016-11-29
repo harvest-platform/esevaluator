@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gerpsh/esevaluator"
+	"github.com/harvest-platform/esevaluator"
 )
 
 func writeResponse(w http.ResponseWriter, status int, data interface{}) {
@@ -15,6 +15,23 @@ func writeResponse(w http.ResponseWriter, status int, data interface{}) {
 	}
 	w.Header().Set("content-type", "application/json")
 	w.WriteHeader(status)
+}
+
+func pingHandler(w http.ResponseWriter, r *http.Request) {
+	resp := map[string]string{
+		"status": "ok",
+	}
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(200)
+	writeResponse(w, http.StatusOK, resp)
+	return
+}
+
+// PingHandler returns an ok response if the server is reachable
+func PingHandler() http.Handler {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", pingHandler)
+	return mux
 }
 
 func translateHandler(w http.ResponseWriter, r *http.Request) {
