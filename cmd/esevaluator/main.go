@@ -18,11 +18,11 @@ func main() {
 		tlskey   string
 	)
 
-	flag.Parse()
-
 	flag.StringVar(&httpaddr, "http", "127.0.0.1:8080", "Address for HTTP transport.")
 	flag.StringVar(&tlscert, "tlscert", "", "Path to TLS certificate.")
 	flag.StringVar(&tlskey, "tlskey", "", "Path to TLS key.")
+
+	flag.Parse()
 
 	http.Handle("/", transport.PingHandler())
 	http.Handle("/elastic", transport.TranslateHandler())

@@ -22,7 +22,6 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 		"status": "ok",
 	}
 	writeResponse(w, http.StatusOK, resp)
-	return
 }
 
 // PingHandler returns an ok response if the server is reachable
