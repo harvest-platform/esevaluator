@@ -21,8 +21,6 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]string{
 		"status": "ok",
 	}
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(200)
 	writeResponse(w, http.StatusOK, resp)
 	return
 }
